@@ -18,19 +18,24 @@ import { createServiceClient } from '@/lib/supabase/serviceClient'
 const FETCH_TIMEOUT_MS = 8000
 const RETRY_DELAY_MS = 2000
 
-async function postWebhook(url, payload) {
+async function postWebhook(url, payload, secret) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Lets the receiver (e.g. Corn Mart's webhook route) verify
+        // this genuinely came from us, not an arbitrary POST to
+        // their endpoint claiming to be a delivery update.
+        'x-webhook-secret': secret,
+      },
       body: JSON.stringify(payload),
       signal: controller.signal,
     })
     clearTimeout(timeout)
-    console.log(res);
     return { ok: res.ok, status: res.status }
   } catch (err) {
     clearTimeout(timeout)
@@ -72,7 +77,7 @@ export async function POST(request) {
 
   const { data: client, error: clientError } = await supabase
     .from('clients')
-    .select('id, webhook_url')
+    .select('id, webhook_url, webhook_secret')
     .eq('id', order.client_id)
     .maybeSingle()
 
@@ -112,12 +117,12 @@ export async function POST(request) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
 
-  let result = await postWebhook(client.webhook_url, payload)
+  let result = await postWebhook(client.webhook_url, payload, client.webhook_secret)
   let attempts = 1
 
   if (!result.ok) {
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
-    result = await postWebhook(client.webhook_url, payload)
+    result = await postWebhook(client.webhook_url, payload, client.webhook_secret)
     attempts = 2
   }
 

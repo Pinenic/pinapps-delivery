@@ -1,14 +1,13 @@
-// components/ProfileForm.jsx
-'use client'
+"use client";
 
-import { useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { User2, Camera } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { User2, Camera } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
-  'w-full px-3 py-2 rounded-xl text-sm bg-white/70 border border-[color:var(--color-border)] ' +
-  'focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary)]/30 focus:border-[color:var(--color-primary)]'
+  "w-full px-3 py-2 rounded-xl text-sm bg-white/70 border border-[color:var(--color-border)] " +
+  "focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary)]/30 focus:border-[color:var(--color-primary)]";
 
 function Field({ label, children }) {
   return (
@@ -16,117 +15,128 @@ function Field({ label, children }) {
       <span className="block text-xs font-medium mb-1">{label}</span>
       {children}
     </label>
-  )
+  );
 }
 
-export default function ProfileForm({ rider, email }) {
-  const router = useRouter()
-  const supabase = createClient()
-  const fileInputRef = useRef(null)
+export default function ProfileForm({ id, rider, email }) {
+  const router = useRouter();
+  const supabase = createClient();
+  const fileInputRef = useRef(null);
 
-  const [avatarUrl, setAvatarUrl] = useState(rider.avatar_url)
-  const [name, setName] = useState(rider.name || '')
-  const [phone, setPhone] = useState(rider.phone || '')
-  const [vehicleType, setVehicleType] = useState(rider.vehicle_type || '')
+  const [avatarUrl, setAvatarUrl] = useState(rider.avatar_url);
+  const [name, setName] = useState(rider.name || "");
+  const [phone, setPhone] = useState(rider.phone || "");
+  const [vehicleType, setVehicleType] = useState(rider.vehicle_type || "");
 
-  const [newEmail, setNewEmail] = useState(email || '')
-  const [newPassword, setNewPassword] = useState('')
+  const [newEmail, setNewEmail] = useState(email || "");
+  const [newPassword, setNewPassword] = useState("");
 
-  const [contactStatus, setContactStatus] = useState(null) // { type, message }
-  const [credentialsStatus, setCredentialsStatus] = useState(null)
-  const [avatarUploading, setAvatarUploading] = useState(false)
-  const [savingContact, setSavingContact] = useState(false)
-  const [savingCredentials, setSavingCredentials] = useState(false)
+  const [contactStatus, setContactStatus] = useState(null); // { type, message }
+  const [credentialsStatus, setCredentialsStatus] = useState(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+  const [savingCredentials, setSavingCredentials] = useState(false);
 
   async function handleAvatarChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setAvatarUploading(true)
+    setAvatarUploading(true);
+    const { data } = await supabase.auth.getSession();
+    // const {
+    //   data: { session },
+    // } = await supabase.auth.getSession();
+    // const payload = JSON.parse(atob(session.access_token.split(".")[1]));
+    // console.log("token sub (auth.uid):", payload.sub);
+    // console.log("id used in filePath:", id);
+    // console.log("match:", payload.sub === id);
+    // console.log('token role claim:', payload.role);
+    // console.log(data);
 
-    const filePath = `${rider.id}/${Date.now()}-${file.name}`
+    const filePath = `${id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true })
+      .from("avatars")
+      .upload(filePath, file);
 
     if (uploadError) {
-      setAvatarUploading(false)
-      setContactStatus({ type: 'error', message: uploadError.message })
-      return
+      console.log(JSON.stringify(uploadError, null, 2));
+      setAvatarUploading(false);
+      setContactStatus({ type: "error", message: uploadError.message });
+      return;
     }
 
     const {
       data: { publicUrl },
-    } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
     const { error: updateError } = await supabase
-      .from('riders')
+      .from("riders")
       .update({ avatar_url: publicUrl })
-      .eq('id', rider.id)
+      .eq("id", rider.id);
 
-    setAvatarUploading(false)
+    setAvatarUploading(false);
 
     if (updateError) {
-      setContactStatus({ type: 'error', message: updateError.message })
-      return
+      setContactStatus({ type: "error", message: updateError.message });
+      return;
     }
 
-    setAvatarUrl(publicUrl)
-    router.refresh()
+    setAvatarUrl(publicUrl);
+    router.refresh();
   }
 
   async function handleContactSubmit(e) {
-    e.preventDefault()
-    setSavingContact(true)
-    setContactStatus(null)
+    e.preventDefault();
+    setSavingContact(true);
+    setContactStatus(null);
 
     const { error } = await supabase
-      .from('riders')
+      .from("riders")
       .update({ name, phone, vehicle_type: vehicleType })
-      .eq('id', rider.id)
+      .eq("id", rider.id);
 
-    setSavingContact(false)
+    setSavingContact(false);
 
     if (error) {
-      setContactStatus({ type: 'error', message: error.message })
-      return
+      setContactStatus({ type: "error", message: error.message });
+      return;
     }
 
-    setContactStatus({ type: 'success', message: 'Contact info updated.' })
-    router.refresh()
+    setContactStatus({ type: "success", message: "Contact info updated." });
+    router.refresh();
   }
 
   async function handleCredentialsSubmit(e) {
-    e.preventDefault()
-    setSavingCredentials(true)
-    setCredentialsStatus(null)
+    e.preventDefault();
+    setSavingCredentials(true);
+    setCredentialsStatus(null);
 
-    const updates = {}
-    if (newEmail && newEmail !== email) updates.email = newEmail
-    if (newPassword) updates.password = newPassword
+    const updates = {};
+    if (newEmail && newEmail !== email) updates.email = newEmail;
+    if (newPassword) updates.password = newPassword;
 
     if (Object.keys(updates).length === 0) {
-      setSavingCredentials(false)
-      setCredentialsStatus({ type: 'error', message: 'Nothing to update.' })
-      return
+      setSavingCredentials(false);
+      setCredentialsStatus({ type: "error", message: "Nothing to update." });
+      return;
     }
 
-    const { error } = await supabase.auth.updateUser(updates)
+    const { error } = await supabase.auth.updateUser(updates);
 
-    setSavingCredentials(false)
-    setNewPassword('')
+    setSavingCredentials(false);
+    setNewPassword("");
 
     if (error) {
-      setCredentialsStatus({ type: 'error', message: error.message })
-      return
+      setCredentialsStatus({ type: "error", message: error.message });
+      return;
     }
 
     setCredentialsStatus({
-      type: 'success',
+      type: "success",
       message: updates.email
-        ? 'Check your new email inbox to confirm the change.'
-        : 'Password updated.',
-    })
+        ? "Check your new email inbox to confirm the change."
+        : "Password updated.",
+    });
   }
 
   return (
@@ -139,9 +149,16 @@ export default function ProfileForm({ rider, email }) {
         >
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="Your avatar" className="h-full w-full object-cover" />
+            <img
+              src={avatarUrl}
+              alt="Your avatar"
+              className="h-full w-full object-cover"
+            />
           ) : (
-            <User2 size={24} className="text-[color:var(--color-primary-dark)]" />
+            <User2
+              size={24}
+              className="text-[color:var(--color-primary-dark)]"
+            />
           )}
           <span className="absolute bottom-0 right-0 h-5 w-5 rounded-full bg-[color:var(--color-primary)] flex items-center justify-center">
             <Camera size={11} className="text-white" />
@@ -157,7 +174,7 @@ export default function ProfileForm({ rider, email }) {
         <div>
           <p className="text-sm font-medium">{rider.name}</p>
           <p className="text-xs text-[color:var(--color-muted)]">
-            {avatarUploading ? 'Uploading...' : 'Tap the icon to change photo'}
+            {avatarUploading ? "Uploading..." : "Tap the icon to change photo"}
           </p>
         </div>
       </div>
@@ -165,20 +182,39 @@ export default function ProfileForm({ rider, email }) {
       <form onSubmit={handleContactSubmit} className="glass-card-solid p-5">
         <h3 className="text-sm font-semibold mb-3">Contact info</h3>
         <Field label="Full name">
-          <input required className={inputClass} value={name}
-            onChange={(e) => setName(e.target.value)} />
+          <input
+            required
+            className={inputClass}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </Field>
         <Field label="Phone">
-          <input required type="tel" placeholder="+2609XXXXXXXX" className={inputClass}
-            value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input
+            required
+            type="tel"
+            placeholder="+2609XXXXXXXX"
+            className={inputClass}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </Field>
         <Field label="Vehicle type">
-          <input className={inputClass} value={vehicleType}
-            onChange={(e) => setVehicleType(e.target.value)} />
+          <input
+            className={inputClass}
+            value={vehicleType}
+            onChange={(e) => setVehicleType(e.target.value)}
+          />
         </Field>
 
         {contactStatus && (
-          <p className={`text-sm mt-1 mb-2 ${contactStatus.type === 'error' ? 'text-red-600' : 'text-[color:var(--color-success)]'}`}>
+          <p
+            className={`text-sm mt-1 mb-2 ${
+              contactStatus.type === "error"
+                ? "text-red-600"
+                : "text-[color:var(--color-success)]"
+            }`}
+          >
             {contactStatus.message}
           </p>
         )}
@@ -188,23 +224,38 @@ export default function ProfileForm({ rider, email }) {
           disabled={savingContact}
           className="w-full bg-[color:var(--color-primary)] text-white text-sm px-4 py-2.5 rounded-full hover:bg-[color:var(--color-primary-dark)] transition-colors disabled:opacity-50 mt-2"
         >
-          {savingContact ? 'Saving...' : 'Save contact info'}
+          {savingContact ? "Saving..." : "Save contact info"}
         </button>
       </form>
 
       <form onSubmit={handleCredentialsSubmit} className="glass-card-solid p-5">
         <h3 className="text-sm font-semibold mb-3">Login credentials</h3>
         <Field label="Email">
-          <input type="email" className={inputClass} value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)} />
+          <input
+            type="email"
+            className={inputClass}
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+          />
         </Field>
         <Field label="New password">
-          <input type="password" placeholder="Leave blank to keep current" className={inputClass}
-            value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          <input
+            type="password"
+            placeholder="Leave blank to keep current"
+            className={inputClass}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
         </Field>
 
         {credentialsStatus && (
-          <p className={`text-sm mt-1 mb-2 ${credentialsStatus.type === 'error' ? 'text-red-600' : 'text-[color:var(--color-success)]'}`}>
+          <p
+            className={`text-sm mt-1 mb-2 ${
+              credentialsStatus.type === "error"
+                ? "text-red-600"
+                : "text-[color:var(--color-success)]"
+            }`}
+          >
             {credentialsStatus.message}
           </p>
         )}
@@ -214,9 +265,9 @@ export default function ProfileForm({ rider, email }) {
           disabled={savingCredentials}
           className="w-full border border-[color:var(--color-primary)] text-[color:var(--color-primary-dark)] text-sm px-4 py-2.5 rounded-full hover:bg-[color:var(--color-primary-pale)] transition-colors disabled:opacity-50 mt-2"
         >
-          {savingCredentials ? 'Updating...' : 'Update credentials'}
+          {savingCredentials ? "Updating..." : "Update credentials"}
         </button>
       </form>
     </div>
-  )
+  );
 }

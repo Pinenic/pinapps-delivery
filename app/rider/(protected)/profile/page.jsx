@@ -25,7 +25,7 @@ export default async function ProfilePage() {
         </p>
       )}
 
-      {rider && <ProfileForm rider={rider} email={user.email} />}
+      {rider && <ProfileForm id={user.id} rider={rider} email={user.email} />}
     </div>
   )
 }
