@@ -1,13 +1,14 @@
 // app/admin/(protected)/clients/page.jsx
 import { Building2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import FeeRuleEditor from '@/components/FeeRuleEditor'
 
 export default async function ClientsPage() {
   const supabase = await createClient()
 
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('id, name, api_key, default_zone, webhook_url, created_at')
+    .select('id, name, api_key, default_zone, webhook_url, fee_rule, created_at')
     .order('created_at')
 
   return (
@@ -66,6 +67,9 @@ export default async function ClientsPage() {
                 </p>
               </div>
             </div>
+
+            <hr className="my-4 border-[color:var(--color-border)]" />
+            <FeeRuleEditor clientId={client.id} feeRule={client.fee_rule} />
           </div>
         ))}
       </div>

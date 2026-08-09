@@ -9,8 +9,13 @@
 //   "dropoff_name": "...", "dropoff_phone": "...", "dropoff_address": "...",
 //   "parcel_description": "...",
 //   "parcel_weight_kg": 5,        // optional
-//   "parcel_fragile": false       // optional
+//   "parcel_fragile": false,      // optional
+//   "parcel_size": "medium"       // required if this client's fee_rule.type is "tiered"
 // }
+//
+// If parcel_size is missing/invalid for a tiered client, responds 400
+// with { error, tiers } — `tiers` lists the valid keys/labels/prices
+// so the caller can render options without a separate lookup.
 import { NextResponse } from 'next/server'
 import { authenticateClient } from '@/lib/apiAuth'
 import { createServiceClient } from '@/lib/supabase/serviceClient'
@@ -55,8 +60,16 @@ export async function POST(request) {
     return NextResponse.json({ error: validationError }, { status: 400 })
   }
 
+  const { fee: delivery_fee, error: feeError, tiers } = calculateDeliveryFee(
+    client.fee_rule,
+    { parcelSize: body.parcel_size }
+  )
+
+  if (feeError) {
+    return NextResponse.json({ error: feeError, tiers }, { status: 400 })
+  }
+
   const supabase = createServiceClient()
-  const delivery_fee = calculateDeliveryFee(client.fee_rule)
 
   const { data: order, error: orderError } = await supabase
     .from('delivery_orders')
@@ -70,6 +83,7 @@ export async function POST(request) {
       dropoff_phone: body.dropoff_phone,
       dropoff_address: body.dropoff_address,
       delivery_fee,
+      parcel_size: body.parcel_size || null,
     })
     .select('id, status, delivery_fee, created_at')
     .single()
