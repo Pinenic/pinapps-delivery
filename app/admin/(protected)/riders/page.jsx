@@ -1,6 +1,10 @@
 // app/admin/(protected)/riders/page.jsx
 import { createClient } from '@/lib/supabase/server'
 
+export const metadata = {
+  title: 'Riders',
+}
+
 const STATUS_STYLES = {
   available: 'bg-green-100 text-green-700',
   busy: 'bg-yellow-100 text-yellow-700',

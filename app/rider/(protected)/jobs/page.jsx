@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import RealtimeRefresher from '@/components/RealtimeRefresher'
 import JobMarketList from '@/components/JobMarketList'
 
+export const metadata = {
+  title: 'Job market',
+}
+
 export default async function JobMarketPage() {
   const supabase = await createClient()
 

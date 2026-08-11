@@ -4,6 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { formatFee, formatRelativeDate } from '@/lib/formatters'
 
+export const metadata = {
+  title: 'Completed jobs',
+}
+
 export default async function CompletedJobsPage() {
   const supabase = await createClient()
 

@@ -3,6 +3,10 @@ import { Building2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import FeeRuleEditor from '@/components/FeeRuleEditor'
 
+export const metadata = {
+  title: 'Clients',
+}
+
 export default async function ClientsPage() {
   const supabase = await createClient()
 

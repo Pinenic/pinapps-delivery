@@ -6,6 +6,10 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import RealtimeRefresher from "@/components/RealtimeRefresher";
 import DashboardChart from "@/components/DashboardChart";
 
+export const metadata = {
+  title: "Dashboard",
+};
+
 function KPI({ label, value }) {
   return (
     <div className="flex flex-col gap-2 min-w-xs shadow-xs p-4 px-5 rounded-3xl bg-white/50 backdrop-blur-md">

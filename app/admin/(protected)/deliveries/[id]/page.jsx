@@ -8,6 +8,23 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import RouteLine from '@/components/ui/RouteLine'
 import { STATUS_LABELS } from '@/components/ui/StatusBadge'
 
+export async function generateMetadata({ params }) {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const { data: order } = await supabase
+    .from('delivery_orders')
+    .select('pickup_name, dropoff_name')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!order) return { title: 'Delivery not found' }
+
+  return {
+    title: `#${id.slice(0, 8)} · ${order.pickup_name} → ${order.dropoff_name}`,
+  }
+}
+
 export default async function DeliveryDetailPage({ params }) {
   const { id } = await params
   const supabase = await createClient()

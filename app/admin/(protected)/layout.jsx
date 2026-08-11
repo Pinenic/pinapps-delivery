@@ -11,11 +11,16 @@
 // clear "can't reach the server" message instead of an unhandled crash.
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import LogoutButton from '@/components/LogoutButton'
-import Sidebar from '@/components/Sidebar'
 import AuthProvider from '@/components/AuthProvider'
 import AdminHeader from '@/components/ui/AdminHeader'
 import Image from 'next/image'
+
+export const metadata = {
+  title: {
+    default: 'Admin',
+    template: '%s — Pinapps Delivery Admin',
+  },
+}
 
 function ConnectionError() {
   return (

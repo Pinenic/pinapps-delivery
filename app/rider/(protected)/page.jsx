@@ -7,6 +7,10 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import RouteLine from '@/components/ui/RouteLine'
 import { formatFee } from '@/lib/formatters'
 
+export const metadata = {
+  title: 'Home',
+}
+
 function KPI({ label, value }) {
   return (
     <div className="glass-card p-3 text-center">

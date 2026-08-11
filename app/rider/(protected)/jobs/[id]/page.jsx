@@ -9,6 +9,23 @@ import StatusBadge, { STATUS_LABELS } from '@/components/ui/StatusBadge'
 import RouteLine from '@/components/ui/RouteLine'
 import { formatFee } from '@/lib/formatters'
 
+export async function generateMetadata({ params }) {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const { data: order } = await supabase
+    .from('delivery_orders')
+    .select('pickup_name, dropoff_name')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!order) return { title: 'Job not found' }
+
+  return {
+    title: `${order.pickup_name} → ${order.dropoff_name}`,
+  }
+}
+
 export default async function RiderJobDetailPage({ params }) {
   const { id } = await params
   const supabase = await createClient()

@@ -8,6 +8,13 @@ import LogoutButton from "@/components/LogoutButton";
 import RiderNav from "@/components/RiderNav";
 import AuthProvider from "@/components/AuthProvider";
 
+export const metadata = {
+  title: {
+    default: "Rider",
+    template: "%s — Corn Mart Rider",
+  },
+};
+
 function ConnectionError() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
