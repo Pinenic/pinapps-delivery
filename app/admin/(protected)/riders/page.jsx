@@ -1,5 +1,7 @@
 // app/admin/(protected)/riders/page.jsx
+import StatusBadge from '@/components/ui/StatusBadge'
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 
 export const metadata = {
   title: 'Riders',
@@ -34,7 +36,7 @@ export default async function RidersPage() {
         </p>
       )}
 
-      <div className="bg-white border border-[#E5E1D8] rounded-lg overflow-hidden">
+      <div className="hidden md:block bg-white border border-[#E5E1D8] rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-[#FAF8F2] text-left text-[#6B6A61]">
             <tr>
@@ -75,6 +77,38 @@ export default async function RidersPage() {
           </tbody>
         </table>
       </div>
+      {riders?.length > 0 && (
+        <div className="md:hidden space-y-3">
+          {riders.map((rider) => (
+            <Link
+              key={rider.id}
+              href={`/admin/deliveries/${rider.id}`}
+              className="block glass-card-solid p-4"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono-tracking text-xs text-[color:var(--color-primary-dark)]">
+                  #{rider.id.slice(0, 8)}
+                </span>
+                <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      STATUS_STYLES[rider.status] || 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {rider.status}
+                  </span>
+              </div>
+              <p className="text-sm font-medium">{rider.dropoff_name}</p>
+              <div className="flex items-center justify-between mt-2 text-xs text-[color:var(--color-muted)]">
+                <span>{rider?.name || "Unassigned"}</span>
+                <span>{rider.rating ? `${rider.rating}★` : "—"}</span>
+              </div>
+              <p className="text-[11px] text-[color:var(--color-muted)] mt-1">
+                {rider.phone}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

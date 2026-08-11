@@ -1,68 +1,73 @@
 // components/AssignRiderForm.jsx
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { useAuthStore } from '@/lib/store/authStore'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { useAuthStore } from "@/lib/store/authStore";
 
 export default function AssignRiderForm({ orderId, riders, currentRiderId }) {
-  const router = useRouter()
-  const supabase = createClient()
-  const currentUser = useAuthStore((s) => s.user)
+  const router = useRouter();
+  const supabase = createClient();
+  const currentUser = useAuthStore((s) => s.user);
 
-  const [riderId, setRiderId] = useState(currentRiderId || '')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [riderId, setRiderId] = useState(currentRiderId || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleAssign(e) {
-    e.preventDefault()
-    if (!riderId) return
+    e.preventDefault();
+    if (!riderId) return;
 
     if (!currentUser) {
-      setError('Your session could not be verified — try refreshing the page.')
-      return
+      setError("Your session could not be verified — try refreshing the page.");
+      return;
     }
 
-    setSubmitting(true)
-    setError('')
+    setSubmitting(true);
+    setError("");
 
     // Two writes: move the order to `assigned` with `assignment_method: admin`,
     // then log it — mirrors what a rider self-assigning will do later,
     // just with `changed_by_role: 'admin'` instead of 'rider'.
     const { error: updateError } = await supabase
-      .from('delivery_orders')
+      .from("delivery_orders")
       .update({
         rider_id: riderId,
-        status: 'assigned',
-        assignment_method: 'admin',
+        status: "assigned",
+        assignment_method: "admin",
       })
-      .eq('id', orderId)
+      .eq("id", orderId);
 
     if (updateError) {
-      setError(updateError.message)
-      setSubmitting(false)
-      return
+      setError(updateError.message);
+      setSubmitting(false);
+      return;
     }
 
-    const { error: logError } = await supabase.from('status_log').insert({
+    const { error: logError } = await supabase.from("status_log").insert({
       delivery_order_id: orderId,
-      status: 'assigned',
+      status: "assigned",
       changed_by: currentUser.id,
-      changed_by_role: 'admin',
-      notes: 'Manually assigned by admin',
-    })
+      changed_by_role: "admin",
+      notes: "Manually assigned by admin",
+    });
 
-    setSubmitting(false)
+    const { error: statusUpdateError } = await supabase
+      .from("riders")
+      .update({ status: "busy" })
+      .eq("id", riderId);
+
+    setSubmitting(false);
 
     if (logError) {
       setError(
         `Rider was assigned, but the audit log failed to save: ${logError.message}`
-      )
-      return
+      );
+      return;
     }
 
-    router.refresh()
+    router.refresh();
   }
 
   return (
@@ -85,12 +90,12 @@ export default function AssignRiderForm({ orderId, riders, currentRiderId }) {
         className="bg-[#1E231C] text-white text-sm px-4 py-2 rounded-md hover:bg-[#D4A017] hover:text-[#1E231C] transition-colors disabled:opacity-50"
       >
         {submitting
-          ? 'Assigning...'
+          ? "Assigning..."
           : currentRiderId
-            ? 'Reassign rider'
-            : 'Assign rider'}
+          ? "Reassign rider"
+          : "Assign rider"}
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </form>
-  )
+  );
 }

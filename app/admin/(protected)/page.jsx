@@ -12,18 +12,18 @@ export const metadata = {
 
 function KPI({ label, value }) {
   return (
-    <div className="flex flex-col gap-2 min-w-xs shadow-xs p-4 px-5 rounded-3xl bg-white/50 backdrop-blur-md">
+    // w-full instead of the previous min-w-xs (320px) — that minimum
+    // was WIDER than the 280px sidebar column at the lg breakpoint,
+    // so the card was overflowing its own container. w-full lets it
+    // fill whatever space its grid/flex parent actually gives it.
+    <div className="flex flex-col gap-2 w-full shadow-xs p-4 px-5 rounded-3xl bg-white/50 backdrop-blur-md">
       <div className="flex font-medium text-sm">{label}</div>
       <div className="flex justify-between">
         <div className="text-xl">{value}</div>
-        <div className="border-b-2 text-center px-2 font-medium">0.0%</div>
+        {/* <div className="border-b-2 text-center px-2 font-medium">0.0%</div> */}
       </div>
-      <p className="text-xs text-muted-foreground">vs last month</p>
+      {/* <p className="text-xs text-muted-foreground">vs last month</p> */}
     </div>
-    // <div className="glass-card p-5">
-    //   <p className="text-sm text-[color:var(--color-muted)] mb-2">{label}</p>
-    //   <span className="font-display text-2xl font-semibold">{value}</span>
-    // </div>
   );
 }
 
@@ -45,17 +45,17 @@ function Leaderboard({ riders }) {
             No riders yet.
           </p>
         )}
-        {riders?.slice(0,2).map((rider) => (
+        {riders?.slice(0, 2).map((rider) => (
           <div key={rider.id} className="flex justify-between items-center">
-            <div className="flex gap-3 items-center">
-              <span className="flex items-center justify-center h-9 w-9 rounded-full bg-[color:var(--color-primary-pale)]">
+            <div className="flex gap-3 items-center min-w-0">
+              <span className="flex items-center justify-center h-9 w-9 rounded-full bg-[color:var(--color-primary-pale)] shrink-0">
                 <User2
                   size={16}
                   className="text-[color:var(--color-primary-dark)]"
                 />
               </span>
-              <div>
-                <p className="text-sm font-medium leading-tight">
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight truncate">
                   {rider.name}
                 </p>
                 <p className="font-mono-tracking text-xs text-[color:var(--color-muted)]">
@@ -63,7 +63,7 @@ function Leaderboard({ riders }) {
                 </p>
               </div>
             </div>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--color-success-pale)] text-[color:var(--color-success)] font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--color-success-pale)] text-[color:var(--color-success)] font-medium shrink-0">
               {rider.rating}★
             </span>
           </div>
@@ -119,6 +119,9 @@ export default async function AdminDashboardPage() {
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
       <RealtimeRefresher table="status_log" />
 
+      {/* KPIs sit in a 3-col row on mobile/tablet (compact, scannable
+          at a glance) and stack to 1 col once they're in the narrow
+          280px sidebar at lg+. */}
       <aside className="space-y-2">
         <div>
           <h1 className="font-display text-xl font-semibold">
@@ -128,13 +131,15 @@ export default async function AdminDashboardPage() {
             Here&apos;s what&apos;s happening with your deliveries today.
           </p>
         </div>
-        <KPI label="Total deliveries" value={total} />
-        <KPI label="Active" value={active} />
-        <KPI label="Delivered" value={delivered} />
+        <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
+          <KPI label="Deliveries" value={total} />
+          <KPI label="Active" value={active} />
+          <KPI label="Delivered" value={delivered} />
+        </div>
         <Leaderboard riders={topRiders} />
       </aside>
 
-      <section className="flex flex-col md:gap-10 lg:gap-4 justify-between w-full">
+      <section className="flex flex-col justify-between w-full min-w-0 gap-4">
         <div className="flex justify-end">
           <Link
             href="/admin/deliveries/new"
@@ -144,15 +149,20 @@ export default async function AdminDashboardPage() {
           </Link>
         </div>
 
-        <div className="flex md:flex-col lg:flex-row gap-5 justify-evenly">
-          <div className="shadow-xs p-4 px-5 min-h-lg min-w-lg rounded-3xl bg-white/80 backdrop-blur-md">
+        {/* Stacks to a single column below lg — the previous
+            min-w-lg + justify-evenly pair had no wrap behavior at
+            all, so on mobile/tablet these two cards were forced side
+            by side and both got crushed. flex-1 + min-w-0 lets each
+            card shrink properly instead of overflowing. */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="shadow-xs p-4 px-5 rounded-3xl bg-white/80 backdrop-blur-md flex-1 min-w-0">
             <h2 className="font-display font-semibold text-sm mb-2">
               Delivery volume — last 7 days
             </h2>
             <DashboardChart data={chartData} />
           </div>
 
-          <div className="shadow-xs p-4 px-5 min-h-lg min-w-lg rounded-3xl bg-white/80 backdrop-blur-md">
+          <div className="shadow-xs p-4 px-5 rounded-3xl bg-white/80 backdrop-blur-md flex-1 min-w-0">
             <div className="flex justify-between items-center mb-3">
               <h2 className="font-display font-semibold text-sm">
                 Recent deliveries
@@ -165,54 +175,63 @@ export default async function AdminDashboardPage() {
               </p>
             )}
 
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-[color:var(--color-muted)] text-left border-b border-[color:var(--color-border)]">
-                  <th className="font-normal py-2">Order</th>
-                  <th className="font-normal py-2">Customer</th>
-                  <th className="font-normal py-2">Rider</th>
-                  <th className="font-normal py-2">Status</th>
-                  <th className="font-normal py-2">Fee</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders?.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="py-6 text-center text-[color:var(--color-muted)]"
-                    >
-                      No deliveries yet — create the first one above.
-                    </td>
+            {/* overflow-x-auto: a dense 5-column table will still be
+                too wide on small screens even after the card itself
+                can shrink — this lets the table scroll horizontally
+                inside its own card rather than blowing out the page.
+                (The dedicated Deliveries page uses real card layouts
+                on mobile instead — this is the compact dashboard
+                widget, horizontal scroll is the pragmatic fit here.) */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[480px]">
+                <thead>
+                  <tr className="text-xs text-[color:var(--color-muted)] text-left border-b border-[color:var(--color-border)]">
+                    <th className="font-normal py-2">Order</th>
+                    <th className="font-normal py-2">Customer</th>
+                    <th className="font-normal py-2">Rider</th>
+                    <th className="font-normal py-2">Status</th>
+                    <th className="font-normal py-2">Fee</th>
                   </tr>
-                )}
-                {orders?.slice(0,5).map((order) => (
-                  <tr
-                    key={order.id}
-                    className="border-b border-[color:var(--color-border)] last:border-0 hover:bg-black/[0.02]"
-                  >
-                    <td className="py-3">
-                      <Link
-                        href={`/admin/deliveries/${order.id}`}
-                        className="font-mono-tracking text-xs text-[color:var(--color-primary-dark)]"
+                </thead>
+                <tbody>
+                  {orders?.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-6 text-center text-[color:var(--color-muted)]"
                       >
-                        #{order.id.slice(0, 8)}
-                      </Link>
-                    </td>
-                    <td className="py-3">{order.dropoff_name}</td>
-                    <td className="py-3 text-[color:var(--color-muted)]">
-                      {order.riders?.name || "—"}
-                    </td>
-                    <td className="py-3">
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td className="py-3">
-                      {order.delivery_fee ? `K${order.delivery_fee}` : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        No deliveries yet — create the first one above.
+                      </td>
+                    </tr>
+                  )}
+                  {orders?.slice(0, 5).map((order) => (
+                    <tr
+                      key={order.id}
+                      className="border-b border-[color:var(--color-border)] last:border-0 hover:bg-black/[0.02]"
+                    >
+                      <td className="py-3">
+                        <Link
+                          href={`/admin/deliveries/${order.id}`}
+                          className="font-mono-tracking text-xs text-[color:var(--color-primary-dark)]"
+                        >
+                          #{order.id.slice(0, 8)}
+                        </Link>
+                      </td>
+                      <td className="py-3">{order.dropoff_name}</td>
+                      <td className="py-3 text-[color:var(--color-muted)]">
+                        {order.riders?.name || "—"}
+                      </td>
+                      <td className="py-3">
+                        <StatusBadge status={order.status} />
+                      </td>
+                      <td className="py-3">
+                        {order.delivery_fee ? `K${order.delivery_fee}` : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
