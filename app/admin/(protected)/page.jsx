@@ -134,7 +134,7 @@ export default async function AdminDashboardPage() {
         <Leaderboard riders={topRiders} />
       </aside>
 
-      <section className="flex flex-col justify-between w-full">
+      <section className="flex flex-col md:gap-10 lg:gap-4 justify-between w-full">
         <div className="flex justify-end">
           <Link
             href="/admin/deliveries/new"
@@ -144,7 +144,7 @@ export default async function AdminDashboardPage() {
           </Link>
         </div>
 
-        <div className="flex justify-evenly">
+        <div className="flex md:flex-col lg:flex-row gap-5 justify-evenly">
           <div className="shadow-xs p-4 px-5 min-h-lg min-w-lg rounded-3xl bg-white/80 backdrop-blur-md">
             <h2 className="font-display font-semibold text-sm mb-2">
               Delivery volume — last 7 days
