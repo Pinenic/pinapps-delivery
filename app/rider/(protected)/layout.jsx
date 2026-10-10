@@ -1,4 +1,3 @@
-// app/rider/(protected)/layout.jsx
 // Mobile-first. Top bar keeps just the brand mark + a quick sign-out;
 // account details live on the Profile tab now. Bottom tab nav is the
 // primary way to move between the five rider-facing pages.
@@ -6,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
 import RiderNav from "@/components/RiderNav";
-import AuthProvider from "@/components/AuthProvider";
+import RiderAuthProvider from "@/components/RiderAuthProvider";
 
 export const metadata = {
   title: {
@@ -56,7 +55,7 @@ export default async function RiderLayout({ children }) {
   }
 
   return (
-    <AuthProvider initialUser={user} initialRole="rider">
+    <RiderAuthProvider>
       <div className="min-h-screen">
         <header className="sticky top-0 z-10 px-3 pt-3">
           <div className="glass-card-solid flex items-center justify-between px-4 py-3">
@@ -77,6 +76,6 @@ export default async function RiderLayout({ children }) {
         <main className="p-3 pb-24">{children}</main>
         <RiderNav />
       </div>
-    </AuthProvider>
+    </RiderAuthProvider>
   );
 }

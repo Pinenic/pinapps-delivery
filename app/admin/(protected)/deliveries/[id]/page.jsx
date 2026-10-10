@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import AssignRiderForm from '@/components/AssignRiderForm'
 import RealtimeRefresher from '@/components/RealtimeRefresher'
 import StatusBadge from '@/components/ui/StatusBadge'
+import SourceBadge from '@/components/ui/SourceBadge'
 import RouteLine from '@/components/ui/RouteLine'
 import { STATUS_LABELS } from '@/components/ui/StatusBadge'
 
@@ -31,7 +32,7 @@ export default async function DeliveryDetailPage({ params }) {
 
   const { data: order } = await supabase
     .from('delivery_orders')
-    .select('*, parcels(*)')
+    .select('*, parcels(*), clients(name)')
     .eq('id', id)
     .single()
 
@@ -85,7 +86,10 @@ export default async function DeliveryDetailPage({ params }) {
             #{order.id.slice(0, 8)}
           </p>
         </div>
-        <StatusBadge status={order.status} />
+        <div className="flex items-center gap-2">
+          <SourceBadge source={order.source} clientName={order.clients?.name} />
+          <StatusBadge status={order.status} />
+        </div>
       </div>
 
       <div className="glass-card-solid p-6 mb-4">

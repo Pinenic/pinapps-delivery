@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { User2, Camera } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { updateRiderProfile } from "@/lib/services/riderService";
 
 const inputClass =
   "w-full px-3 py-2 rounded-xl text-sm bg-white/70 border border-[color:var(--color-border)] " +
@@ -18,8 +18,7 @@ function Field({ label, children }) {
   );
 }
 
-export default function ProfileForm({ id, rider, email }) {
-  const router = useRouter();
+export default function ProfileForm({ id, rider, email, onSaved }) {
   const supabase = createClient();
   const fileInputRef = useRef(null);
 
@@ -69,20 +68,17 @@ export default function ProfileForm({ id, rider, email }) {
       data: { publicUrl },
     } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
-    const { error: updateError } = await supabase
-      .from("riders")
-      .update({ avatar_url: publicUrl })
-      .eq("id", rider.id);
-
-    setAvatarUploading(false);
-
-    if (updateError) {
-      setContactStatus({ type: "error", message: updateError.message });
-      return;
+    // The file goes to Storage from the client (RLS-protected by the
+    // user's own JWT); saving the resulting URL goes through the API.
+    try {
+      await updateRiderProfile({ avatar_url: publicUrl });
+      setAvatarUrl(publicUrl);
+      onSaved?.();
+    } catch (err) {
+      setContactStatus({ type: "error", message: err.message });
+    } finally {
+      setAvatarUploading(false);
     }
-
-    setAvatarUrl(publicUrl);
-    router.refresh();
   }
 
   async function handleContactSubmit(e) {
@@ -90,20 +86,15 @@ export default function ProfileForm({ id, rider, email }) {
     setSavingContact(true);
     setContactStatus(null);
 
-    const { error } = await supabase
-      .from("riders")
-      .update({ name, phone, vehicle_type: vehicleType })
-      .eq("id", rider.id);
-
-    setSavingContact(false);
-
-    if (error) {
-      setContactStatus({ type: "error", message: error.message });
-      return;
+    try {
+      await updateRiderProfile({ name, phone, vehicle_type: vehicleType });
+      setContactStatus({ type: "success", message: "Contact info updated." });
+      onSaved?.();
+    } catch (err) {
+      setContactStatus({ type: "error", message: err.message });
+    } finally {
+      setSavingContact(false);
     }
-
-    setContactStatus({ type: "success", message: "Contact info updated." });
-    router.refresh();
   }
 
   async function handleCredentialsSubmit(e) {

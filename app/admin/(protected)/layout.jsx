@@ -1,4 +1,3 @@
-// app/admin/(protected)/layout.jsx
 // Wraps every admin page except /admin/login. Confirms the visitor
 // is signed in AND has a row in `admins` — a rider account or any
 // other authenticated-but-non-admin user gets bounced back to login.
@@ -11,7 +10,7 @@
 // clear "can't reach the server" message instead of an unhandled crash.
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import AuthProvider from '@/components/AuthProvider'
+import AdminAuthProvider from '@/components/AdminAuthProvider'
 import AdminHeader from '@/components/ui/AdminHeader'
 import Image from 'next/image'
 
@@ -65,7 +64,7 @@ export default async function AdminLayout({ children }) {
   }
 
   return (
-    <AuthProvider initialUser={user} initialRole="admin">
+    <AdminAuthProvider>
       <div className="flex h-[100vh] overflow-scroll">
       <Image
         src="/images/bg-light.png"
@@ -84,6 +83,6 @@ export default async function AdminLayout({ children }) {
           <main className="flex-1 p-6">{children}</main>
         </div>
       </div>
-    </AuthProvider>
+    </AdminAuthProvider>
   )
 }

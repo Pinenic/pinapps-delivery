@@ -1,4 +1,3 @@
-// components/DashboardChart.jsx
 'use client'
 
 import {

@@ -66,3 +66,82 @@ h1, h2, h3, h4 {
   border-radius: 1.5rem;
   box-shadow: 0 1px 2px rgba(43, 33, 30, 0.04), 0 8px 24px rgba(43, 33, 30, 0.05);
 }
+
+/* ── Consumer-facing surfaces ─────────────────────────────────
+   Separate token set from the admin/rider panels above. Those keep
+   their pale-red glassmorphic identity; the consumer app is a light
+   canvas with solid obsidian panels — a different product surface
+   for a different audience, not a reskin of the same one.
+
+   Two accents with distinct jobs, rather than one doing everything:
+   violet is anything interactive (buttons, links, the route line),
+   orange is reserved strictly for live/in-progress status so it
+   always means the same thing wherever it appears. */
+:root {
+  --consumer-bg: #f8f9fa;
+  --consumer-surface: #ffffff;
+  --consumer-obsidian: #111827;
+  --consumer-obsidian-soft: #1f2937;
+  --consumer-accent: #6366f1;
+  --consumer-accent-dark: #4f46e5;
+  --consumer-live: #ff6b00;
+  --consumer-ink: #111827;
+  --consumer-muted: #6b7280;
+  --consumer-line: #e5e7eb;
+}
+
+.consumer-root {
+  background-color: var(--consumer-bg);
+  color: var(--consumer-ink);
+  /* No radial gradient wash here — the admin side uses one, but on a
+     near-white consumer canvas it reads as muddiness rather than
+     depth. Contrast comes from the obsidian panels instead. */
+  background-image: none;
+}
+
+.consumer-card {
+  background-color: var(--consumer-surface);
+  border: 1px solid var(--consumer-line);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+.consumer-panel-dark {
+  background-color: var(--consumer-obsidian);
+  color: #ffffff;
+  border-radius: 1.25rem;
+}
+
+.consumer-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--consumer-line);
+  background-color: var(--consumer-surface);
+  font-size: 0.9375rem;
+}
+
+.consumer-input:focus {
+  outline: none;
+  border-color: var(--consumer-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.consumer-btn {
+  width: 100%;
+  padding: 0.6875rem 1rem;
+  border-radius: 0.75rem;
+  background-color: var(--consumer-accent);
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.consumer-btn:hover:not(:disabled) {
+  background-color: var(--consumer-accent-dark);
+}
+
+.consumer-btn:disabled {
+  opacity: 0.5;
+}

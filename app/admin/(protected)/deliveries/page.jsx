@@ -1,8 +1,8 @@
-// app/admin/(protected)/deliveries/page.jsx
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import StatusBadge from "@/components/ui/StatusBadge";
+import SourceBadge from "@/components/ui/SourceBadge";
 import DeliveryFilters from "@/components/DeliveryFilters";
 
 export const metadata = {
@@ -10,6 +10,11 @@ export const metadata = {
 };
 
 const PAGE_SIZE = 20;
+
+// A hand-edited ?dateFrom=garbage used to throw RangeError and take the
+// whole page down; an unparseable date is now just ignored.
+const validDate = (value) =>
+  value && !Number.isNaN(new Date(value).getTime()) ? value : null;
 
 function buildHref(params, page) {
   const sp = new URLSearchParams(params);
@@ -25,8 +30,9 @@ function buildHref(params, page) {
 export default async function DeliveriesPage({ searchParams }) {
   const params = await searchParams;
   const status = params.status || null;
-  const dateFrom = params.dateFrom || null;
-  const dateTo = params.dateTo || null;
+  const source = params.source || null;
+  const dateFrom = validDate(params.dateFrom);
+  const dateTo = validDate(params.dateTo);
   const page = Math.max(1, parseInt(params.page) || 1);
 
   const supabase = await createClient();
@@ -34,12 +40,13 @@ export default async function DeliveriesPage({ searchParams }) {
   let query = supabase
     .from("delivery_orders")
     .select(
-      "id, pickup_name, dropoff_name, status, delivery_fee, created_at, riders(name)",
+      "id, pickup_name, dropoff_name, status, delivery_fee, created_at, source, riders(name), clients(name)",
       { count: "exact" }
     )
     .order("created_at", { ascending: false });
 
   if (status) query = query.eq("status", status);
+  if (source) query = query.eq("source", source);
   if (dateFrom) query = query.gte("created_at", new Date(dateFrom).toISOString());
   if (dateTo) {
     const end = new Date(dateTo);
@@ -85,6 +92,7 @@ export default async function DeliveriesPage({ searchParams }) {
               <tr className="text-xs text-[color:var(--color-muted)] text-left border-b border-[color:var(--color-border)]">
                 <th className="font-normal px-4 py-3">Order</th>
                 <th className="font-normal px-4 py-3">Customer</th>
+                <th className="font-normal px-4 py-3">Source</th>
                 <th className="font-normal px-4 py-3">Rider</th>
                 <th className="font-normal px-4 py-3">Status</th>
                 <th className="font-normal px-4 py-3">Fee</th>
@@ -106,6 +114,9 @@ export default async function DeliveriesPage({ searchParams }) {
                     </Link>
                   </td>
                   <td className="px-4 py-3">{order.dropoff_name}</td>
+                  <td className="px-4 py-3">
+                    <SourceBadge source={order.source} clientName={order.clients?.name} />
+                  </td>
                   <td className="px-4 py-3 text-[color:var(--color-muted)]">
                     {order.riders?.name || "—"}
                   </td>
@@ -125,10 +136,7 @@ export default async function DeliveriesPage({ searchParams }) {
         </div>
       )}
 
-      {/* Cards — below md. Not just a squeezed table: a real
-          purpose-built layout, since browsing/filtering IS this
-          page's job (unlike the dashboard's compact widget, where
-          horizontal scroll on a table is an acceptable shortcut). */}
+      {/* Cards — below md. */}
       {orders?.length > 0 && (
         <div className="md:hidden space-y-3">
           {orders.map((order) => (
@@ -143,7 +151,10 @@ export default async function DeliveriesPage({ searchParams }) {
                 </span>
                 <StatusBadge status={order.status} />
               </div>
-              <p className="text-sm font-medium">{order.dropoff_name}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{order.dropoff_name}</p>
+                <SourceBadge source={order.source} clientName={order.clients?.name} />
+              </div>
               <div className="flex items-center justify-between mt-2 text-xs text-[color:var(--color-muted)]">
                 <span>{order.riders?.name || "Unassigned"}</span>
                 <span>{order.delivery_fee ? `K${order.delivery_fee}` : "—"}</span>

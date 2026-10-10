@@ -1,7 +1,7 @@
-// app/admin/(protected)/analytics/page.jsx
-import { createClient } from "@/lib/supabase/server";
 import DashboardChart from "@/components/DashboardChart";
 import { STATUS_LABELS } from "@/components/ui/StatusBadge";
+import { requireAdminPage } from "@/lib/auth/requireAdminPage";
+import { getAdminStats, statsDayToDate } from "@/lib/db/statsDb";
 
 export const metadata = {
   title: "Analytics",
@@ -18,10 +18,6 @@ const STATUS_COLORS = {
 };
 
 function Stat({ label, value }) {
-  // Deliberately plainer than the dashboard's KPI card (no "0.0% vs
-  // last month" placeholder) — this page only shows numbers it can
-  // actually back up. A fake trend indicator next to a real stat
-  // would undercut the honesty of everything else here.
   return (
     <div className="glass-card p-5">
       <p className="text-sm text-[color:var(--color-muted)] mb-1">{label}</p>
@@ -31,46 +27,32 @@ function Stat({ label, value }) {
 }
 
 export default async function AnalyticsPage() {
-  const supabase = await createClient();
+  await requireAdminPage();
 
-  const { data: orders, error } = await supabase
-    .from("delivery_orders")
-    .select("status, delivery_fee, created_at");
+  let stats = null;
+  let error = null;
+  try {
+    stats = await getAdminStats(30);
+  } catch (err) {
+    error = err.message;
+  }
 
-  const total = orders?.length || 0;
-  const delivered = orders?.filter((o) => o.status === "delivered").length || 0;
+  const total = stats?.total ?? 0;
+  const delivered = stats?.delivered ?? 0;
   const completionRate = total > 0 ? Math.round((delivered / total) * 100) : 0;
+  const avgFee = stats?.avg_fee != null ? Number(stats.avg_fee).toFixed(2) : null;
+  const riderCount = stats?.rider_count ?? 0;
 
-  const feesCharged = orders?.filter((o) => o.delivery_fee != null) || [];
-  const avgFee =
-    feesCharged.length > 0
-      ? (feesCharged.reduce((sum, o) => sum + Number(o.delivery_fee), 0) / feesCharged.length).toFixed(2)
-      : null;
-
-  const { count: riderCount } = await supabase
-    .from("riders")
-    .select("id", { count: "exact", head: true });
-
-  const statusCounts = {};
-  orders?.forEach((o) => {
-    statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
-  });
+  const statusCounts = stats?.by_status ?? {};
   const maxStatusCount = Math.max(1, ...Object.values(statusCounts));
 
-  // Last 30 days — a wider window than the dashboard's 7-day chart,
-  // since this page's job is a slower-moving overview, not a daily
-  // check-in.
-  const days = Array.from({ length: 30 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (29 - i));
-    return d;
-  });
-  const chartData = days.map((d) => ({
-    label: d.toLocaleDateString(undefined, { day: "numeric", month: "short" }),
-    count:
-      orders?.filter(
-        (o) => new Date(o.created_at).toDateString() === d.toDateString()
-      ).length || 0,
+  const chartData = (stats?.daily ?? []).map((d) => ({
+    label: statsDayToDate(d.day).toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }),
+    count: d.count,
   }));
 
   return (
@@ -84,7 +66,7 @@ export default async function AnalyticsPage() {
 
       {error && (
         <p className="text-sm text-red-600 mb-4">
-          Couldn&apos;t load analytics: {error.message}
+          Couldn&apos;t load analytics: {error}
         </p>
       )}
 

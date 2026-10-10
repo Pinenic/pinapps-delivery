@@ -1,4 +1,3 @@
-// app/api/webhooks/dispatch/route.js
 // POST /api/webhooks/dispatch
 //
 // Called by a Supabase Database Webhook configured to fire on
@@ -64,7 +63,7 @@ export async function POST(request) {
 
   const { data: order, error: orderError } = await supabase
     .from('delivery_orders')
-    .select('id, client_id, external_reference')
+    .select('id, client_id, source, external_reference')
     .eq('id', record.delivery_order_id)
     .maybeSingle()
 
@@ -73,6 +72,13 @@ export async function POST(request) {
       { error: 'Delivery order not found' },
       { status: 404 }
     )
+  }
+
+  // Consumer orders belong to the platform, not to a business client, so
+  // there is no one to notify. (Also guards against a consumer order ever
+  // being filed under a client that does have a webhook.)
+  if (order.source === 'consumer' || !order.client_id) {
+    return NextResponse.json({ skipped: 'consumer order, no client webhook' })
   }
 
   const { data: client, error: clientError } = await supabase

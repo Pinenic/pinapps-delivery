@@ -1,15 +1,11 @@
-// components/AssignRiderForm.jsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { useAuthStore } from "@/lib/store/authStore";
+import { assignRider } from "@/lib/services/adminService";
 
 export default function AssignRiderForm({ orderId, riders, currentRiderId }) {
   const router = useRouter();
-  const supabase = createClient();
-  const currentUser = useAuthStore((s) => s.user);
 
   const [riderId, setRiderId] = useState(currentRiderId || "");
   const [submitting, setSubmitting] = useState(false);
@@ -19,55 +15,20 @@ export default function AssignRiderForm({ orderId, riders, currentRiderId }) {
     e.preventDefault();
     if (!riderId) return;
 
-    if (!currentUser) {
-      setError("Your session could not be verified — try refreshing the page.");
-      return;
-    }
-
     setSubmitting(true);
     setError("");
 
-    // Two writes: move the order to `assigned` with `assignment_method: admin`,
-    // then log it — mirrors what a rider self-assigning will do later,
-    // just with `changed_by_role: 'admin'` instead of 'rider'.
-    const { error: updateError } = await supabase
-      .from("delivery_orders")
-      .update({
-        rider_id: riderId,
-        status: "assigned",
-        assignment_method: "admin",
-      })
-      .eq("id", orderId);
-
-    if (updateError) {
-      setError(updateError.message);
+    try {
+      // One server call validates the order, assigns the rider, writes the
+      // audit log (with the real admin id) and refreshes rider availability.
+      const result = await assignRider(orderId, riderId);
+      if (result?.warning) setError(result.warning);
+      router.refresh();
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    const { error: logError } = await supabase.from("status_log").insert({
-      delivery_order_id: orderId,
-      status: "assigned",
-      changed_by: currentUser.id,
-      changed_by_role: "admin",
-      notes: "Manually assigned by admin",
-    });
-
-    const { error: statusUpdateError } = await supabase
-      .from("riders")
-      .update({ status: "busy" })
-      .eq("id", riderId);
-
-    setSubmitting(false);
-
-    if (logError) {
-      setError(
-        `Rider was assigned, but the audit log failed to save: ${logError.message}`
-      );
-      return;
-    }
-
-    router.refresh();
   }
 
   return (

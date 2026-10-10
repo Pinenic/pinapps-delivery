@@ -1,4 +1,3 @@
-// components/FeeRuleEditor.jsx
 'use client'
 
 import { useState } from 'react'
@@ -16,9 +15,6 @@ function emptyTier() {
   }
 }
 
-// Normalizes a saved fee_rule (which may be 'flat', 'tiered', or
-// entirely missing for a client seeded before this existed) into
-// consistent editable state.
 function toEditableState(feeRule) {
   if (feeRule?.type === 'tiered') {
     return {
@@ -43,7 +39,16 @@ function toEditableState(feeRule) {
 const inputClass =
   'px-2 py-1.5 rounded-lg text-xs bg-white/70 border border-[color:var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary)]/30 focus:border-[color:var(--color-primary)]'
 
-export default function FeeRuleEditor({ clientId, feeRule }) {
+// Writes a fee_rule to any table that has one. Defaults to the
+// `clients` table so existing per-client usage on the Clients page
+// keeps working unchanged; the consumer pricing page passes
+// table="platform_pricing" instead.
+export default function FeeRuleEditor({
+  clientId,
+  rowId,
+  table = 'clients',
+  feeRule,
+}) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -113,9 +118,9 @@ export default function FeeRuleEditor({ clientId, feeRule }) {
     }
 
     const { error } = await supabase
-      .from('clients')
+      .from(table)
       .update({ fee_rule })
-      .eq('id', clientId)
+      .eq('id', rowId ?? clientId)
 
     setSaving(false)
 

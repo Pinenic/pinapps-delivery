@@ -1,0 +1,29 @@
+/* app/consumer-preview/consumer-theme.css
+   Consumer-surface tokens, deliberately separate from the admin/rider
+   --color-* system in app/globals.css. Scoped to .consumer-theme so
+   nothing here can leak into (or be leaked into by) the existing brand. */
+
+.consumer-theme {
+  --consumer-bg: #f8f9fa;
+  --consumer-surface: #ffffff;
+  --consumer-surface-dark: #111827;
+  --consumer-accent-primary: #6366f1;
+  --consumer-accent-primary-dark: #4f46e5;
+  --consumer-accent-status: #ff6b00;
+  --consumer-ink: #161b22;
+  --consumer-ink-on-dark: #f8f9fa;
+  --consumer-muted: #6b7280;
+  --consumer-muted-on-dark: #9ca3af;
+  --consumer-border: #e5e7eb;
+
+  background-color: var(--consumer-bg);
+  color: var(--consumer-ink);
+  font-family: var(--font-consumer-body);
+}
+
+.consumer-theme h1,
+.consumer-theme h2,
+.consumer-theme h3 {
+  font-family: var(--font-consumer-display);
+  letter-spacing: -0.015em;
+}

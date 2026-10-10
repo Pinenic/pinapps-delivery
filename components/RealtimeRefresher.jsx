@@ -1,4 +1,3 @@
-// components/RealtimeRefresher.jsx
 'use client'
 
 import { useEffect } from 'react'

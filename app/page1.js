@@ -10,5 +10,5 @@ import { redirect } from "next/navigation";
 // into indexing — the root layout defaults to noindex since almost
 // everything else in this app is a private admin/rider tool).
 export default function Home() {
-  redirect("/rider");
+  redirect("/consumer");
 }

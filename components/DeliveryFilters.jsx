@@ -1,4 +1,3 @@
-// components/DeliveryFilters.jsx
 "use client";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -24,9 +23,11 @@ export default function DeliveryFilters() {
   const searchParams = useSearchParams();
 
   const status = searchParams.get("status") || "all";
+  const source = searchParams.get("source") || "all";
   const dateFrom = searchParams.get("dateFrom") || "";
   const dateTo = searchParams.get("dateTo") || "";
-  const hasFilters = status !== "all" || dateFrom || dateTo;
+  const hasFilters =
+    status !== "all" || source !== "all" || dateFrom || dateTo;
 
   function update(key, value) {
     const params = new URLSearchParams(searchParams.toString());
@@ -52,6 +53,18 @@ export default function DeliveryFilters() {
             {s === "all" ? "All statuses" : STATUS_LABELS[s] || s}
           </option>
         ))}
+      </select>
+
+      <select
+        value={source}
+        onChange={(e) =>
+          update("source", e.target.value === "all" ? "" : e.target.value)
+        }
+        className={inputClass}
+      >
+        <option value="all">All sources</option>
+        <option value="consumer">Consumer</option>
+        <option value="api">Business clients</option>
       </select>
 
       <input

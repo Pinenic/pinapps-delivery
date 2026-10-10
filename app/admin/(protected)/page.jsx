@@ -1,10 +1,11 @@
-// app/admin/(protected)/page.jsx
 import Link from "next/link";
 import { Plus, User2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import StatusBadge from "@/components/ui/StatusBadge";
 import RealtimeRefresher from "@/components/RealtimeRefresher";
 import DashboardChart from "@/components/DashboardChart";
+import { requireAdminPage } from "@/lib/auth/requireAdminPage";
+import { getAdminStats, statsDayToDate } from "@/lib/db/statsDb";
 
 export const metadata = {
   title: "Dashboard",
@@ -12,17 +13,11 @@ export const metadata = {
 
 function KPI({ label, value }) {
   return (
-    // w-full instead of the previous min-w-xs (320px) — that minimum
-    // was WIDER than the 280px sidebar column at the lg breakpoint,
-    // so the card was overflowing its own container. w-full lets it
-    // fill whatever space its grid/flex parent actually gives it.
     <div className="flex flex-col gap-2 w-full shadow-xs p-4 px-5 rounded-3xl bg-white/50 backdrop-blur-md">
       <div className="flex font-medium text-sm">{label}</div>
       <div className="flex justify-between">
         <div className="text-xl">{value}</div>
-        {/* <div className="border-b-2 text-center px-2 font-medium">0.0%</div> */}
       </div>
-      {/* <p className="text-xs text-muted-foreground">vs last month</p> */}
     </div>
   );
 }
@@ -74,6 +69,9 @@ function Leaderboard({ riders }) {
 }
 
 export default async function AdminDashboardPage() {
+  // The stats come from the service role, so re-check admin access here
+  // rather than relying on the layout alone.
+  await requireAdminPage();
   const supabase = await createClient();
 
   const { data: orders, error } = await supabase
@@ -90,29 +88,24 @@ export default async function AdminDashboardPage() {
     .order("rating", { ascending: false })
     .limit(3);
 
-  const { data: allOrders } = await supabase
-    .from("delivery_orders")
-    .select("status, created_at");
+  let stats = null;
+  let statsError = null;
+  try {
+    stats = await getAdminStats(7);
+  } catch (err) {
+    statsError = err.message;
+  }
 
-  const total = allOrders?.length || 0;
-  const active =
-    allOrders?.filter((o) =>
-      ["pending", "assigned", "picked_up", "in_transit"].includes(o.status)
-    ).length || 0;
-  const delivered =
-    allOrders?.filter((o) => o.status === "delivered").length || 0;
+  const total = stats?.total ?? "—";
+  const active = stats?.active ?? "—";
+  const delivered = stats?.delivered ?? "—";
 
-  const days = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return d;
-  });
-  const chartData = days.map((d) => ({
-    label: d.toLocaleDateString(undefined, { weekday: "short" }),
-    count:
-      allOrders?.filter(
-        (o) => new Date(o.created_at).toDateString() === d.toDateString()
-      ).length || 0,
+  const chartData = (stats?.daily ?? []).map((d) => ({
+    label: statsDayToDate(d.day).toLocaleDateString(undefined, {
+      weekday: "short",
+      timeZone: "UTC",
+    }),
+    count: d.count,
   }));
 
   return (
@@ -131,6 +124,11 @@ export default async function AdminDashboardPage() {
             Here&apos;s what&apos;s happening with your deliveries today.
           </p>
         </div>
+        {statsError && (
+          <p className="text-xs text-red-600">
+            Couldn&apos;t load totals: {statsError}
+          </p>
+        )}
         <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
           <KPI label="Deliveries" value={total} />
           <KPI label="Active" value={active} />
@@ -149,11 +147,7 @@ export default async function AdminDashboardPage() {
           </Link>
         </div>
 
-        {/* Stacks to a single column below lg — the previous
-            min-w-lg + justify-evenly pair had no wrap behavior at
-            all, so on mobile/tablet these two cards were forced side
-            by side and both got crushed. flex-1 + min-w-0 lets each
-            card shrink properly instead of overflowing. */}
+        {/* Stacks to a single column below lg. */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="shadow-xs p-4 px-5 rounded-3xl bg-white/80 backdrop-blur-md flex-1 min-w-0">
             <h2 className="font-display font-semibold text-sm mb-2">
@@ -175,13 +169,7 @@ export default async function AdminDashboardPage() {
               </p>
             )}
 
-            {/* overflow-x-auto: a dense 5-column table will still be
-                too wide on small screens even after the card itself
-                can shrink — this lets the table scroll horizontally
-                inside its own card rather than blowing out the page.
-                (The dedicated Deliveries page uses real card layouts
-                on mobile instead — this is the compact dashboard
-                widget, horizontal scroll is the pragmatic fit here.) */}
+            {/* overflow-x-auto */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[480px]">
                 <thead>

@@ -1,62 +1,34 @@
-// components/StatusUpdateButton.jsx
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { useAuthStore } from '@/lib/store/authStore'
+import { advanceStatus } from '@/lib/services/riderService'
 import { NEXT_STATUS, NEXT_ACTION_LABEL } from '@/lib/deliveryStatus'
 
 export default function StatusUpdateButton({ orderId, currentStatus }) {
   const router = useRouter()
-  const supabase = createClient()
-  const currentUser = useAuthStore((s) => s.user)
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const nextStatus = NEXT_STATUS[currentStatus]
-
   // delivered / failed / cancelled / pending — nothing for a rider to do here
-  if (!nextStatus) return null
+  if (!NEXT_STATUS[currentStatus]) return null
 
   async function handleUpdate() {
-    if (!currentUser) {
-      setError('Your session could not be verified — try refreshing the page.')
-      return
-    }
-
     setSubmitting(true)
     setError('')
 
-    // RLS only allows this when delivery_orders.rider_id = auth.uid(),
-    // so a rider can't update a job that isn't theirs.
-    const { error: updateError } = await supabase
-      .from('delivery_orders')
-      .update({ status: nextStatus })
-      .eq('id', orderId)
-
-    if (updateError) {
-      setError(updateError.message)
+    try {
+      // The server works out the next status and writes the order and
+      // its log entry together; we only say which status we're looking at.
+      const result = await advanceStatus(orderId, currentStatus)
+      if (result?.warning) setError(result.warning)
+      router.refresh()
+    } catch (err) {
+      setError(err.message)
+    } finally {
       setSubmitting(false)
-      return
     }
-
-    const { error: logError } = await supabase.from('status_log').insert({
-      delivery_order_id: orderId,
-      status: nextStatus,
-      changed_by: currentUser.id,
-      changed_by_role: 'rider',
-    })
-
-    setSubmitting(false)
-
-    if (logError) {
-      setError(`Status updated, but the log entry failed: ${logError.message}`)
-      return
-    }
-
-    router.refresh()
   }
 
   return (

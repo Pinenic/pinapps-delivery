@@ -1,80 +1,36 @@
-// components/ClaimJobButton.jsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { useAuthStore } from "@/lib/store/authStore";
-import { id } from "date-fns/locale";
+import { claimJob } from "@/lib/services/riderService";
 
-export default function ClaimJobButton({ orderId }) {
+// onClaimed: optional — pass a refetch from a client view. Without it
+// (e.g. rendered inside a list that doesn't refetch), falls back to
+// router.refresh(); the realtime subscription on the page covers the rest.
+export default function ClaimJobButton({ orderId, onClaimed }) {
   const router = useRouter();
-  const supabase = createClient();
-  const currentUser = useAuthStore((s) => s.user);
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleClaim() {
-    if (!currentUser) {
-      setError("Your session could not be verified — try refreshing the page.");
-      return;
-    }
+  const refresh = () => (onClaimed ? onClaimed() : router.refresh());
 
+  async function handleClaim() {
     setSubmitting(true);
     setError("");
 
-    // The race guard: .is('rider_id', null) means this only matches
-    // (and only succeeds) if the job is STILL unclaimed at the moment
-    // this runs. If another rider claimed it a second ago, this
-    // update matches zero rows instead of overwriting their claim —
-    // Postgres's row locking is what actually makes this atomic, this
-    // filter just expresses the condition.
-    const { data, error: updateError } = await supabase
-      .from("delivery_orders")
-      .update({
-        rider_id: currentUser.id,
-        status: "assigned",
-        assignment_method: "self",
-      })
-      .eq("id", orderId)
-      .is("rider_id", null)
-      .select("id");
-
-    if (updateError) {
-      setError(updateError.message);
+    // The race guard lives server-side (riderDb.claimJob): the update
+    // only matches if the job is STILL pending and unassigned, so a
+    // second rider gets a 409 instead of overwriting the first claim.
+    try {
+      const result = await claimJob(orderId);
+      if (result?.warning) setError(result.warning);
+      refresh();
+    } catch (err) {
+      setError(err.message);
+      if (err.status === 409) refresh(); // drop it from this rider's open-pool view
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    if (!data || data.length === 0) {
-      setError("Someone else just claimed this job.");
-      setSubmitting(false);
-      router.refresh(); // drop it from this rider's open-pool view
-      return;
-    }
-
-    const { error: logError } = await supabase.from("status_log").insert({
-      delivery_order_id: orderId,
-      status: "assigned",
-      changed_by: currentUser.id,
-      changed_by_role: "rider",
-      notes: "Self-assigned from open job pool",
-    });
-
-    const { error: statusUpdateError } = await supabase
-      .from("riders")
-      .update({ status: "busy" })
-      .eq("id", currentUser.id);
-
-    setSubmitting(false);
-
-    if (logError) {
-      setError(`Job claimed, but the log entry failed: ${logError.message}`);
-      return;
-    }
-
-    router.refresh();
   }
 
   return (

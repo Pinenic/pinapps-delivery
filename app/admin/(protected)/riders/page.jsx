@@ -1,33 +1,42 @@
 // app/admin/(protected)/riders/page.jsx
-import StatusBadge from '@/components/ui/StatusBadge'
-import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import StatusBadge from "@/components/ui/StatusBadge";
+import { createClient } from "@/lib/supabase/server";
+import { Plus } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
-  title: 'Riders',
-}
+  title: "Riders",
+};
 
 const STATUS_STYLES = {
-  available: 'bg-green-100 text-green-700',
-  busy: 'bg-yellow-100 text-yellow-700',
-  offline: 'bg-gray-100 text-gray-700',
-}
+  available: "bg-green-100 text-green-700",
+  busy: "bg-yellow-100 text-yellow-700",
+  offline: "bg-gray-100 text-gray-700",
+};
 
 export default async function RidersPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
 
   const { data: riders, error } = await supabase
-    .from('riders')
-    .select('id, name, phone, vehicle_type, status, rating')
-    .order('name')
+    .from("riders")
+    .select("id, name, phone, vehicle_type, status, rating")
+    .order("name");
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-[#262620]">Riders</h2>
-        <p className="text-sm text-[#6B6A61]">
-          All riders registered on the platform.
-        </p>
+      <div className="mb-6 flex justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-[#262620]">Riders</h2>
+          <p className="text-sm text-[#6B6A61]">
+            All riders registered on the platform.
+          </p>
+        </div>
+        <Link
+          href="/admin/riders/new"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[color:var(--color-primary)] text-white text-sm font-medium hover:bg-[color:var(--color-primary-dark)] transition-colors"
+        >
+          <Plus size={16} /> Create rider
+        </Link>
       </div>
 
       {error && (
@@ -50,7 +59,10 @@ export default async function RidersPage() {
           <tbody>
             {riders?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-[#A8A79C]">
+                <td
+                  colSpan={5}
+                  className="px-4 py-6 text-center text-[#A8A79C]"
+                >
                   No riders yet — run seed.js to add test riders.
                 </td>
               </tr>
@@ -60,12 +72,12 @@ export default async function RidersPage() {
                 <td className="px-4 py-2">{rider.name}</td>
                 <td className="px-4 py-2">{rider.phone}</td>
                 <td className="px-4 py-2 capitalize">
-                  {rider.vehicle_type || '—'}
+                  {rider.vehicle_type || "—"}
                 </td>
                 <td className="px-4 py-2">
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      STATUS_STYLES[rider.status] || 'bg-gray-100 text-gray-700'
+                      STATUS_STYLES[rider.status] || "bg-gray-100 text-gray-700"
                     }`}
                   >
                     {rider.status}
@@ -90,12 +102,12 @@ export default async function RidersPage() {
                   #{rider.id.slice(0, 8)}
                 </span>
                 <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      STATUS_STYLES[rider.status] || 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {rider.status}
-                  </span>
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    STATUS_STYLES[rider.status] || "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {rider.status}
+                </span>
               </div>
               <p className="text-sm font-medium">{rider.dropoff_name}</p>
               <div className="flex items-center justify-between mt-2 text-xs text-[color:var(--color-muted)]">
@@ -110,5 +122,5 @@ export default async function RidersPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
