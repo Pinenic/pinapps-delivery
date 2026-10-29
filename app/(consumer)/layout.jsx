@@ -1,21 +1,21 @@
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+//import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./consumer-theme.css";
 
 // Headline font distinct from the admin/rider brand's Space Grotesk —
 // the consumer surface is meant to read as its own thing.
-const displayFont = Plus_Jakarta_Sans({
-  variable: "--font-consumer-display",
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
-
+//const displayFont = Plus_Jakarta_Sans({
+//  variable: "--font-consumer-display",
+//  subsets: ["latin"],
+//  weight: ["600", "700"],
+//});
+//
 // Body font shared in spirit with the rest of the platform (Inter),
 // so the two surfaces don't feel unrelated.
-const bodyFont = Inter({
-  variable: "--font-consumer-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
+//const bodyFont = Inter({
+//  variable: "--font-consumer-body",
+//  subsets: ["latin"],
+//  weight: ["400", "500", "600"],
+//});
 
 export const metadata = {
   title: "Send a package — Pinapps Delivery",
@@ -31,7 +31,7 @@ export const metadata = {
 
 export default function ConsumerLayout({ children }) {
   return (
-    <div className={`${displayFont.variable} ${bodyFont.variable} consumer-theme min-h-full`}>
+    <div className={`$ consumer-theme min-h-full`}>
       {children}
     </div>
   );
